@@ -2,7 +2,7 @@
     <div id="event-form" :class="{ active: active }" :style="{ top: top, left: left }">
         <h4>Add an event</h4>
         <div class="text">
-            <input type="text" v-model="description" placeholder="Dinner at Pancho's">
+            <input v-focus type="text" v-model="description" placeholder="Dinner at Pancho's" @keyup.enter="create">
         </div>
         <div class="buttons">
             <button @click="create">Create</button>
@@ -39,6 +39,14 @@
             },
             left() {
                 return `${this.$store.state.eventFormPosX}px`
+            }
+        },
+        directives: {
+            focus: {
+                // use the update hook as Vue triggers update because every time the mouse is clicked the style tag is updated
+                update(el) {
+                    el.focus();
+                }
             }
         }
     }
