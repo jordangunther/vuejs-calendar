@@ -17,7 +17,11 @@
         },
         methods: {
             captureClick(event) {
+                //position form
                 this.$store.commit('eventFormPos', { x: event.clientX, y: event.clientY });
+                // set event form to active so it displays
+                this.$store.commit('eventFormActive', true);
+
             }
         }
     }
