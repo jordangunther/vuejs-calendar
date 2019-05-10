@@ -17,10 +17,23 @@ let events = [
   { description: 'Random event 3', date: moment('2019-06-08', 'YYYY-MM-DD') }
 ];
 
+let renderer;
+
 app.get('/', (req, res) => {
   let template = fs.readFileSync(path.resolve('./index.html'), 'utf-8');
   let contentMarker = '<!--APP-->';
-  res.send(template.replace(contentMarker, `<script>var __INITIAL_STATE__ = ${ serialize(events) }</script>`));
+  if (renderer) {
+    renderer.renderToString({}, (err, html) => {
+      if (err) {
+        console.log(err);
+      } else {
+        res.send(template.replace(contentMarker, `<script>var __INITIAL_STATE__ = ${ serialize(events) }</script>\n${html}`));
+      }
+    });
+  } else {
+    res.send('<p>Awaiting ocmpilation..</p>');
+  }
+
 
 });
 
@@ -41,7 +54,7 @@ if (process.env.NODE_ENV === 'development') {
   const reloadServer = reload(app);
   require('./webpack-dev-middleware').init(app);
   require('./webpack-server-compiler').init(function(bundle) {
-    console.log('Node bundle built');
+    renderer = require('vue-server-renderer').createBundleRenderer(bundle);
   });
 }
 
