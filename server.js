@@ -11,6 +11,8 @@ const serialize = require('serialize-javascript');
 
 app.use('/public', express.static(path.join(__dirname, 'public')));
 
+
+
 let events = [
   { description: 'Random event 1', date: moment('2019-05-06', 'YYYY-MM-DD') },
   { description: 'Random event 2', date: moment('2019-05-07', 'YYYY-MM-DD') },
@@ -19,11 +21,17 @@ let events = [
 
 let renderer;
 
+if (process.env.NODE_ENV === 'production') {
+  let bundle = fs.readFileSync('./dist/node.bundle.js', 'utf8');
+  renderer = require('vue-server-renderer').createBundleRenderer(bundle);
+  app.use('/dist', express.static(path.join(__dirname, 'dist')));
+}
+
 app.get('/', (req, res) => {
   let template = fs.readFileSync(path.resolve('./index.html'), 'utf-8');
   let contentMarker = '<!--APP-->';
   if (renderer) {
-    renderer.renderToString({}, (err, html) => {
+    renderer.renderToString({ events }, (err, html) => {
       if (err) {
         console.log(err);
       } else {
@@ -31,7 +39,7 @@ app.get('/', (req, res) => {
       }
     });
   } else {
-    res.send('<p>Awaiting ocmpilation..</p>');
+    res.send('<p>Awaiting compilation..</p><script src="/reload/reload.js"></script>');
   }
 
 
@@ -41,7 +49,10 @@ app.get('/', (req, res) => {
 
 app.use(require('body-parser').json());
 app.post('/add_event', (req, res) => {
-  events.push(req.body);
+  events.push({
+    description: req.body.description,
+    date: moment(req.body.date)
+  });
   res.sendStatus(200);
 });
 
@@ -54,7 +65,11 @@ if (process.env.NODE_ENV === 'development') {
   const reloadServer = reload(app);
   require('./webpack-dev-middleware').init(app);
   require('./webpack-server-compiler').init(function(bundle) {
+    let needsRelode = (renderer === undefined);
     renderer = require('vue-server-renderer').createBundleRenderer(bundle);
+    if (needsRelode) {
+      reloadServer.reload();
+    }
   });
 }
 
